@@ -2,69 +2,165 @@
 
 <a href="https://pypi.org/project/gradio_molecule3d/" target="_blank"><img alt="PyPI - Version" src="https://img.shields.io/pypi/v/gradio_molecule3d"></a>
 <img alt="Python" src="https://img.shields.io/badge/python-3.8+-blue.svg">
-<img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-green.svg">
+<img alt="License" src="https://img.shields.io/badge/license-MIT-green.svg">
 
-**A Gradio custom component for 3D molecular structure visualization with automatic prediction**
+**A Gradio custom component for 3D molecular structure visualization based on FAIR Chem's UMA component**
 
-This component provides instant 3D visualization of molecular structures with **no "Predict" button required** - just upload your molecular file and see immediate 3D rendering using Jmol colors and optimized representations.
+This component is **based on the [FAIR Chemistry UMA Molecule3D component](https://huggingface.co/spaces/facebook/fairchem_uma_demo)** and provides advanced 3D visualization of molecular structures with support for:
+- ✨ **Multi-model PDB animation** for MD trajectories
+- 🔬 **Periodic boundary conditions** (PBC) for crystals
+- 🚀 **Automatic ASE format conversion** 
+- 🎨 **Optimized visual defaults** (sphere + stick, Jmol colors)
 
-## ✨ Features
+## 🎯 Based on FAIR Chem UMA Component
 
-- 🚀 **Automatic Visualization** - No predict button needed, structures appear instantly on file upload
-- 🎨 **Jmol Color Scheme** - Standard molecular colors with customizable scales
-- 🔬 **Multiple Formats** - Supports PDB, CIF, SDF, MOL2, XYZ, and more
-- ⚡ **Optimized Rendering** - Dual sphere + stick representation for clear visualization
-- 🧪 **Crystal Support** - Automatic expansion of crystal structures for better viewing
+This component incorporates the excellent work from Meta's FAIR Chemistry team, specifically their [UMA educational demo](https://huggingface.co/spaces/facebook/fairchem_uma_demo). The UMA (Universal Model for Atoms) component provides state-of-the-art molecular visualization capabilities optimized for:
+- Molecular dynamics simulations
+- Materials science applications
+- Protein structure visualization
+- Crystal structure analysis
+
+**Attribution:** This component is derived from the FAIR Chemistry UMA Molecule3D component, which is MIT licensed by Meta Platforms, Inc. and its affiliates.
+
+## ✨ Key Features
+
+### 🎬 Multi-Model PDB Animation
+The component handles **multi-model PDB files** as animation frames, perfect for MD trajectories:
+```python
+# Your ASE trajectory is automatically converted to animated PDB
+viewer = Molecule3D(
+    label="MD Simulation",
+    inputs=[trajectory_file],
+    value=lambda x: x,
+)
+# Users see smooth atomic motion! 🎥
+```
+
+### 🔬 Periodic Boundary Conditions
+Automatically visualizes crystal structures with PBC:
+- Unit cell repetition (15Å minimum)
+- CRYST1 records for cell parameters
+- Perfect for materials science
+
+### 🚀 Automatic Format Conversion
+Backend converts any ASE-compatible format to multi-model PDB:
+- `.traj` → multi-model PDB with MODEL/ENDMDL tags
+- `.cif`, `.xyz`, `.pdb` → optimized PDB
+- Automatic PBC detection and handling
+
+### 🎨 Optimized Visual Defaults
+```python
+DEFAULT_REPRESENTATIONS = [
+    {"style": "sphere", "color": "Jmol", "scale": 0.3},
+    {"style": "stick", "color": "Jmol", "scale": 0.2},
+]
+DEFAULT_CONFIG = {
+    "backgroundColor": "white",
+    "orthographic": False,
+    "disableFog": False,
+}
+```
 
 ## Installation
 
-### From GitHub (Recommended)
+### From GitHub
 
 ```bash
-pip install git+https://github.com/YOUR_USERNAME/gradio-molecule3d.git
+pip install git+https://github.com/FarisFLAIFIL/gradio-molecule3d.git
+```
+
+### From sync branch (latest UMA features)
+
+```bash
+pip install git+https://github.com/FarisFLAIFIL/gradio-molecule3d.git@sync-uma-component
 ```
 
 ### Local Development
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/gradio-molecule3d.git
+git clone https://github.com/FarisFLAIFIL/gradio-molecule3d.git
 cd gradio-molecule3d
 pip install -e .
 ```
 
 ## Quick Start
 
-### Automatic Visualization (No Predict Button)
+### UMA-Style MD Visualization
 
 ```python
 import gradio as gr
 from gradio_molecule3d import Molecule3D
 
-# Create demo with automatic visualization
+# Create demo with UMA defaults
 with gr.Blocks() as demo:
-    gr.Markdown("# 🧬 Molecular Structure Viewer")
+    gr.Markdown("# 🎬 Molecular Dynamics Viewer")
     
     with gr.Row():
         with gr.Column():
-            # File upload
-            file_input = gr.File(
-                label="Upload Molecular Structure",
-                file_types=[".pdb", ".cif", ".sdf", ".mol2", ".xyz"]
+            # File upload - supports ASE trajectories
+            trajectory_file = gr.File(
+                label="Upload MD Trajectory",
+                file_types=[".traj", ".pdb", ".xyz", ".cif"]
             )
         
-        with gr.Column():
-            # 3D viewer with Jmol colors (default)
-            molecule_viewer = Molecule3D(label="3D Structure")
-    
-    # 🎯 Auto-predict: Upload triggers immediate visualization
-    file_input.upload(
-        fn=lambda x: x,
-        inputs=file_input,
-        outputs=molecule_viewer
-    )
+        with gr.Column(scale=2):
+            # 3D viewer with animation
+            viewer = Molecule3D(
+                label="Animated Trajectory",
+                reps=[
+                    {"style": "sphere", "color": "Jmol", "scale": 0.3},
+                    {"style": "stick", "color": "Jmol", "scale": 0.2},
+                ],
+                config={
+                    "backgroundColor": "white",
+                    "orthographic": False,
+                    "disableFog": False,
+                },
+                height=500,
+                inputs=[trajectory_file],
+                value=lambda x: x,
+            )
 
 if __name__ == "__main__":
     demo.launch()
+```
+
+### MACE Chatbot Integration
+
+```python
+from gradio_molecule3d import Molecule3D
+from ase.io import read, write
+
+def run_md_simulation(structure_file, steps=100):
+    """Run MD with MACE and visualize"""
+    # Your MACE MD code here...
+    # atoms_list = run_mace_md(structure_file, steps)
+    
+    # Save as multi-model PDB for animation
+    output_pdb = "trajectory.pdb"
+    write(output_pdb, atoms_list, format='proteindatabank', multimodel=True)
+    
+    return output_pdb
+
+# In your Gradio app:
+with gr.Blocks() as demo:
+    structure_input = gr.File(label="Structure")
+    md_steps = gr.Slider(1, 500, 100, label="MD Steps")
+    trajectory_output = gr.File(label="Trajectory")
+    
+    viewer = Molecule3D(
+        label="MD Simulation",
+        height=500,
+        inputs=[trajectory_output],
+        value=lambda x: x,
+    )
+    
+    run_button = gr.Button("Run MD")
+    run_button.click(
+        run_md_simulation,
+        inputs=[structure_input, md_steps],
+        outputs=[trajectory_output]
+    )
 ```
 
 ### Custom Representations
@@ -98,6 +194,52 @@ with gr.Blocks() as demo:
     )
     
 demo.launch()
+```
+
+## 🔧 How It Works
+
+### Multi-Model PDB Generation
+
+The backend automatically converts trajectories to multi-model PDB:
+
+```python
+def write_proteindatabank(fileobj, images):
+    """Write multi-model PDB with MODEL/ENDMDL tags"""
+    for n, atoms in enumerate(images):
+        if atoms.get_pbc().any():
+            # Write CRYST1 record for unit cell
+            fileobj.write('CRYST1...')
+        fileobj.write(f'MODEL     {n + 1}\n')
+        # Write atoms...
+        fileobj.write('ENDMDL\n')
+```
+
+### PBC Handling
+
+```python
+def find_minimum_repeats(atoms, min_length=15.0):
+    """Repeat unit cell to meet minimum size"""
+    cell_lengths = atoms.get_cell().lengths()
+    repeats = [max(1, int(np.ceil(min_length / length))) 
+               for length in cell_lengths]
+    return tuple(repeats)
+```
+
+### Format Conversion
+
+```python
+def convert_file_to_pdb(file_path, gradio_cache):
+    """Convert any ASE format to multi-model PDB"""
+    structures = ase.io.read(file_path, ':')  # Read all frames
+    
+    if all(structures[0].pbc):
+        repeats = find_minimum_repeats(structures[0])
+        structures = [s.repeat(repeats) for s in structures]
+    
+    # Write multi-model PDB
+    temp_pdb = tempfile.NamedTemporaryFile(suffix=".pdb", delete=False)
+    write_proteindatabank(temp_pdb, structures)
+    return temp_pdb.name
 ```
 
 ## `Molecule3D`
@@ -158,7 +300,7 @@ Any | None
         "scale": 0.2,
     },
 ]</code></td>
-<td align="left">None</td>
+<td align="left">Visual representation configuration</td>
 </tr>
 
 <tr>
@@ -175,7 +317,7 @@ Any | None
     "orthographic": False,
     "disableFog": False,
 }</code></td>
-<td align="left">dictionary of config options</td>
+<td align="left">3Dmol.js viewer configuration</td>
 </tr>
 
 <tr>
@@ -201,7 +343,7 @@ Literal["single", "multiple", "directory"]
 
 </td>
 <td align="left"><code>"single"</code></td>
-<td align="left">if single, allows user to upload one file. If "multiple", user uploads multiple files. If "directory", user uploads all files in selected directory. Return type will be list for each file in case of "multiple" or "directory".</td>
+<td align="left">if single, allows user to upload one file. If "multiple", user uploads multiple files. If "directory", user uploads all files in selected directory.</td>
 </tr>
 
 <tr>
@@ -214,111 +356,7 @@ list[str] | None
 
 </td>
 <td align="left"><code>None</code></td>
-<td align="left">List of file extensions or types of files to be uploaded (e.g. ['image', '.json', '.mp4']). "file" allows any file to be uploaded, "image" allows only image files to be uploaded, "audio" allows only audio files to be uploaded, "video" allows only video files to be uploaded, "text" allows only text files to be uploaded.</td>
-</tr>
-
-<tr>
-<td align="left"><code>type</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-Literal["filepath", "binary"]
-```
-
-</td>
-<td align="left"><code>"filepath"</code></td>
-<td align="left">Type of value to be returned by component. "file" returns a temporary file object with the same base name as the uploaded file, whose full path can be retrieved by file_obj.name, "binary" returns an bytes object.</td>
-</tr>
-
-<tr>
-<td align="left"><code>label</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-str | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">The label for this component. Appears above the component and is also used as the header if there are a table of examples for this component. If None and used in a `gr.Interface`, the label will be the name of the parameter this component is assigned to.</td>
-</tr>
-
-<tr>
-<td align="left"><code>every</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-Timer | float | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">Continously calls `value` to recalculate it if `value` is a function (has no effect otherwise). Can provide a Timer whose tick resets `value`, or a float that provides the regular interval for the reset Timer.</td>
-</tr>
-
-<tr>
-<td align="left"><code>inputs</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-Component | Sequence[Component] | set[Component] | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">Components that are used as inputs to calculate `value` if `value` is a function (has no effect otherwise). `value` is recalculated any time the inputs change.</td>
-</tr>
-
-<tr>
-<td align="left"><code>show_label</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-bool | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">if True, will display label.</td>
-</tr>
-
-<tr>
-<td align="left"><code>container</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-bool
-```
-
-</td>
-<td align="left"><code>True</code></td>
-<td align="left">If True, will place the component in a container - providing some extra padding around the border.</td>
-</tr>
-
-<tr>
-<td align="left"><code>scale</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-int | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">relative size compared to adjacent Components. For example if Components A and B are in a Row, and A has scale=2, and B has scale=1, A will be twice as wide as B. Should be an integer. scale applies in Rows, and to top-level Components in Blocks where fill_height=True.</td>
-</tr>
-
-<tr>
-<td align="left"><code>min_width</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-int
-```
-
-</td>
-<td align="left"><code>160</code></td>
-<td align="left">minimum pixel width, will wrap if not sufficient screen space to satisfy this value. If a certain scale value results in this Component being narrower than min_width, the min_width parameter will be respected first.</td>
+<td align="left">List of file extensions (e.g. ['.pdb', '.cif', '.traj'])</td>
 </tr>
 
 <tr>
@@ -331,7 +369,20 @@ int | float | None
 
 </td>
 <td align="left"><code>None</code></td>
-<td align="left">The maximum height of the file component, specified in pixels if a number is passed, or in CSS units if a string is passed. If more files are uploaded than can fit in the height, a scrollbar will appear.</td>
+<td align="left">Height of the viewer in pixels</td>
+</tr>
+
+<tr>
+<td align="left"><code>inputs</code></td>
+<td align="left" style="width: 25%;">
+
+```python
+Component | Sequence[Component] | None
+```
+
+</td>
+<td align="left"><code>None</code></td>
+<td align="left">Components to watch for updates (e.g., trajectory file)</td>
 </tr>
 
 <tr>
@@ -344,117 +395,76 @@ bool | None
 
 </td>
 <td align="left"><code>None</code></td>
-<td align="left">if True, will allow users to upload a file; if False, can only be used to display files. If not provided, this is inferred based on whether the component is used as an input or output.</td>
+<td align="left">if True, allows file upload; if False, display only</td>
 </tr>
 
-<tr>
-<td align="left"><code>visible</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-bool
-```
-
-</td>
-<td align="left"><code>True</code></td>
-<td align="left">If False, component will be hidden.</td>
-</tr>
-
-<tr>
-<td align="left"><code>elem_id</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-str | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">An optional string that is assigned as the id of this component in the HTML DOM. Can be used for targeting CSS styles.</td>
-</tr>
-
-<tr>
-<td align="left"><code>elem_classes</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-list[str] | str | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">An optional list of strings that are assigned as the classes of this component in the HTML DOM. Can be used for targeting CSS styles.</td>
-</tr>
-
-<tr>
-<td align="left"><code>render</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-bool
-```
-
-</td>
-<td align="left"><code>True</code></td>
-<td align="left">If False, component will not render be rendered in the Blocks context. Should be used if the intention is to assign event listeners now but render the component later.</td>
-</tr>
-
-<tr>
-<td align="left"><code>key</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-int | str | None
-```
-
-</td>
-<td align="left"><code>None</code></td>
-<td align="left">if assigned, will be used to assume identity across a re-render. Components that have the same key across a re-render will have their value preserved.</td>
-</tr>
-
-<tr>
-<td align="left"><code>showviewer</code></td>
-<td align="left" style="width: 25%;">
-
-```python
-bool
-```
-
-</td>
-<td align="left"><code>True</code></td>
-<td align="left">If True, will display the 3Dmol.js viewer. If False, will not display the 3Dmol.js viewer.</td>
-</tr>
 </tbody></table>
-
 
 ### Events
 
 | name | description |
 |:-----|:------------|
-| `change` | Triggered when the value of the Molecule3D changes either because of user input (e.g. a user types in a textbox) OR because of a function update (e.g. an image receives a value from the output of an event trigger). See `.input()` for a listener that is only triggered by user input. |
-| `select` | Event listener for when the user selects or deselects the Molecule3D. Uses event data gradio.SelectData to carry `value` referring to the label of the Molecule3D, and `selected` to refer to state of the Molecule3D. See EventData documentation on how to use this event data |
-| `clear` | This listener is triggered when the user clears the Molecule3D using the clear button for the component. |
-| `upload` | This listener is triggered when the user uploads a file into the Molecule3D. |
-| `delete` | This listener is triggered when the user deletes and item from the Molecule3D. Uses event data gradio.DeletedFileData to carry `value` referring to the file that was deleted as an instance of FileData. See EventData documentation on how to use this event data |
+| `change` | Triggered when the value changes |
+| `select` | Triggered when user selects/deselects |
+| `clear` | Triggered when user clears the component |
+| `upload` | Triggered when user uploads a file |
+| `delete` | Triggered when user deletes a file |
 
+## 🎓 Use Cases
 
+### 1. Molecular Dynamics Simulations
+- Visualize MACE, UMA, or other ML potential MD trajectories
+- Smooth animation of atomic motion
+- Perfect for educational demonstrations
 
-### User function
+### 2. Materials Science
+- Crystal structure visualization with PBC
+- Unit cell repetition for better viewing
+- Inorganic and organic molecular crystals
 
-The impact on the users predict function varies depending on whether the component is used as an input or output for an event (or both).
+### 3. Protein Structure Analysis
+- PDB file visualization
+- Multi-model NMR ensembles
+- Structural biology applications
 
-- When used as an Input, the component only impacts the input signature of the user function.
-- When used as an output, the component only impacts the return signature of the user function.
+### 4. Chemistry Education
+- Interactive molecular visualization
+- Real-time structure manipulation
+- Automatic format handling
 
-The code snippet below is accurate in cases where the component is used as both an input and an output.
+## 📚 Resources
 
-- **As output:** Is passed, passes the file as a `str` or `bytes` object, or a list of `str` or list of `bytes` objects, depending on `type` and `file_count`.
-- **As input:** Should return, expects a `str` filepath or URL, or a `list[str]` of filepaths/URLs.
+- **FAIR Chemistry UMA Demo**: https://huggingface.co/spaces/facebook/fairchem_uma_demo
+- **UMA Model**: https://huggingface.co/facebook/UMA
+- **FAIR Chemistry GitHub**: https://github.com/facebookresearch/fairchem
+- **3Dmol.js Documentation**: https://3dmol.csb.pitt.edu/
+- **ASE Documentation**: https://wiki.fysik.dtu.dk/ase/
 
- ```python
- def predict(
-     value: bytes | str | list[bytes] | list[str] | None
- ) -> str | list[str] | None:
-     return value
- ```
- 
+## 📄 License
+
+This component is **MIT licensed**, matching the FAIR Chemistry UMA component.
+
+**Original UMA Component**: Copyright (c) Meta Platforms, Inc. and its affiliates.  
+**This Repository**: Copyright (c) 2025 Faris FLAIFIL
+
+See [LICENSE](LICENSE) for full details.
+
+## 🙏 Acknowledgments
+
+This component is based on the excellent work by the FAIR Chemistry team at Meta:
+- UMA component from the [FAIR Chem educational demo](https://huggingface.co/spaces/facebook/fairchem_uma_demo)
+- Built on [gradio-molecule3d](https://huggingface.co/spaces/simonduerr/gradio_molecule3d) by Simon Duerr
+- Uses [3Dmol.js](https://3dmol.csb.pitt.edu/) for visualization
+- Integrates with [ASE](https://wiki.fysik.dtu.dk/ase/) for structure handling
+
+Special thanks to the entire FAIR Chemistry team for making UMA and this component available as open source!
+
+## 🔧 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📧 Contact
+
+For issues or questions:
+- Open an issue on [GitHub](https://github.com/FarisFLAIFIL/gradio-molecule3d/issues)
+- Check the [FAIR Chemistry discussions](https://github.com/facebookresearch/fairchem/discussions)
