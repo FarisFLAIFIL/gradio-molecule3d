@@ -8,12 +8,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gradio_molecule3d"
-version = "0.0.7"
-description = "Gradio custom component for 3D molecular structure visualization with automatic prediction"
+version = "0.0.8"
+description = "FAIR Chem UMA-style Gradio component for 3D molecular visualization with multi-model PDB animation"
 readme = "README.md"
-license = "Apache-2.0"
+license = "MIT"
 requires-python = ">=3.8"
-authors = [{ name = "Gradio Molecule3D Contributors", email = "gradio.molecule3d@example.com" }]
+authors = [
+  { name = "Faris FLAIFIL", email = "faris.flaifil@example.com" },
+  { name = "FAIR Chemistry Team", email = "fairchemistry@meta.com" }
+]
 keywords = [
   "molecular visualization",
   "3D structures",
@@ -23,7 +26,11 @@ keywords = [
   "protein",
   "crystal structures",
   "bioinformatics",
-  "computational chemistry"
+  "computational chemistry",
+  "molecular dynamics",
+  "materials science",
+  "FAIR Chemistry",
+  "UMA"
 ]
 # Dependencies required for the package
 dependencies = [
@@ -32,7 +39,7 @@ dependencies = [
   "numpy>=1.20.0"
 ]
 classifiers = [
-  'Development Status :: 3 - Alpha',
+  'Development Status :: 4 - Beta',
   'Operating System :: OS Independent',
   'Programming Language :: Python :: 3',
   'Programming Language :: Python :: 3 :: Only',
@@ -40,17 +47,33 @@ classifiers = [
   'Programming Language :: Python :: 3.9',
   'Programming Language :: Python :: 3.10',
   'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: 3.12',
   'Topic :: Scientific/Engineering',
   'Topic :: Scientific/Engineering :: Artificial Intelligence',
   'Topic :: Scientific/Engineering :: Visualization',
+  'Topic :: Scientific/Engineering :: Chemistry',
+  'Topic :: Scientific/Engineering :: Physics',
+  'License :: OSI Approved :: MIT License',
 ]
 
+[project.urls]
+Homepage = "https://github.com/FarisFLAIFIL/gradio-molecule3d"
+Repository = "https://github.com/FarisFLAIFIL/gradio-molecule3d"
+"Bug Tracker" = "https://github.com/FarisFLAIFIL/gradio-molecule3d/issues"
+"FAIR Chemistry UMA" = "https://huggingface.co/spaces/facebook/fairchem_uma_demo"
 
 [project.optional-dependencies]
 dev = ["build", "twine"]
 
 [tool.hatch.build]
-artifacts = ["/backend/gradio_molecule3d/templates", "*.pyi", "/Users/zulissi/micromamba/envs/gradio/lib/python3.12/site-packages/gradio_molecule3d/templates", "/private/home/zulissi/conda_envs/fairchem_020625/lib/python3.12/site-packages/gradio_molecule3d/templates", "/\\backend\\gradio_molecule3d\\templates"]
+artifacts = [
+  "/backend/gradio_molecule3d/templates",
+  "/frontend/dist",
+  "*.pyi"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["/backend/gradio_molecule3d"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"frontend/dist" = "gradio_molecule3d/frontend/dist"
